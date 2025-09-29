@@ -369,6 +369,7 @@
             }
 
             function updateAndRenderBlocks() {
+                console.log("Total words the app is loading:", allWords.length); // <-- ADD THIS EXACT LINE
                 wordBlocks = [];
                 for (let i = 0; i < filteredWords.length; i += BLOCK_SIZE) {
                     wordBlocks.push(filteredWords.slice(i, i + BLOCK_SIZE));
