@@ -300,7 +300,6 @@
                             blockCooldowns = data.blockCooldowns || {};
                             practiceCounts = data.practiceCounts || {};
                         } else {
-                            // This case handles when a user is new OR after their data is deleted.
                             totalPoints = 0;
                             slabs = [];
                             bars = [];
@@ -597,7 +596,7 @@
                 addWordsBtn.addEventListener('click', () => addWordModal.classList.remove('hidden');
                 closeModalBtn.addEventListener('click', () => addWordModal.classList.add('hidden'));
                 
-                resetScoreBtn.addEventListener('click', () => {
+                resetScoreBtn.addEventListener('click', async () => {
                     const pin = prompt("আপনার স্কোর এবং সমস্ত অগ্রগতি রিসেট করতে, পিন লিখুন: 2542");
                     if (pin === "2542") {
                         if (userDataUnsubscribe) {
@@ -605,20 +604,19 @@
                             userDataUnsubscribe = null;
                         }
                         
-                        // Definitive Fix: Delete the document from Firebase
-                        db.collection(COLLECTION_NAME).doc(userId).delete().then(() => {
-                            // After deletion, re-initialize the app state from scratch
-                            isAppReady = false; // Force re-initialization
-                            mainMenu.classList.add('hidden');
-                            loadingIndicator.classList.remove('hidden');
-                            loadUserData(); // This will now create a fresh state
+                        mainMenu.classList.add('hidden');
+                        loadingIndicator.classList.remove('hidden');
+
+                        try {
+                            await db.collection(COLLECTION_NAME).doc(userId).delete();
+                            await loadUserData();
                             alert("আপনার অগ্রগতি সফলভাবে মুছে ফেলা হয়েছে।");
-                        }).catch(error => {
-                            console.error("Critical error during delete:", error);
-                            alert("অগ্রগতি মোছার সময় একটি গুরুতর ত্রুটি হয়েছে।");
-                            // Attempt to reconnect anyway
-                            loadUserData();
-                        });
+                        } catch (error) {
+                             console.error("Critical error during reset:", error);
+                             alert("অগ্রগতি মোছার সময় একটি গুরুতর ত্রুটি হয়েছে।");
+                             await loadUserData(); // Attempt to reconnect
+                        }
+
                     } else if (pin) {
                         alert("ভুল পিন।");
                     }
