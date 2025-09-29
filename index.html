@@ -109,9 +109,9 @@
                         </div>
 
                         <div class="mt-6">
-                             <p id="progress-text" class="text-sm text-gray-400 text-center mb-2">শব্দ ১ এর ২০</p>
+                             <p id="progress-text" class="text-sm text-gray-400 text-center mb-2">শব্দ ১ এর ৪০</p>
                              <div class="w-full bg-gray-700 rounded-full h-2.5">
-                                <div id="progress-bar" class="bg-teal-500 h-2.5 rounded-full transition-all duration-300" style="width: 5%"></div>
+                                <div id="progress-bar" class="bg-teal-500 h-2.5 rounded-full transition-all duration-300" style="width: 2.5%"></div>
                              </div>
                         </div>
                     </div>
@@ -155,7 +155,7 @@
         <div id="completion-screen" class="text-center hidden fade-in">
              <div class="glassmorphism p-8 rounded-2xl shadow-2xl">
                 <h2 class="text-3xl font-bold text-teal-300">ব্লক সম্পন্ন!</h2>
-                <p id="final-score" class="text-xl mt-4">আপনি ২০ টির মধ্যে ১৮ টি সঠিক করেছেন।</p>
+                <p id="final-score" class="text-xl mt-4">আপনি ৪০ টির মধ্যে ৩৮ টি সঠিক করেছেন।</p>
                 <p id="final-points" class="text-lg mt-2 text-gray-300">মোট পয়েন্ট: ১৫০</p>
                 <div class="mt-8 flex justify-center">
                     <button id="main-menu-btn" class="bg-gray-700 hover:bg-gray-600 text-white font-bold py-3 px-6 rounded-lg transition-transform transform hover:scale-105">প্রধান মেনু</button>
@@ -209,8 +209,9 @@
             let userId = null;
             let userDataUnsubscribe = null;
 
-            const BLOCK_SIZE = 20;
-            const COOLDOWN_TIME = 20 * 60 * 1000; // 20 minutes
+            // CHANGE: Block size is now 40
+            const BLOCK_SIZE = 40;
+            // REMOVED: Cooldown time constant is no longer needed
 
             let wordBlocks = [];
             let slabBlocks = [];
@@ -221,7 +222,7 @@
             let filteredWords = [];
             let blockCooldowns = {};
             let practiceCounts = {};
-            let cooldownInterval = null;
+            // REMOVED: Cooldown interval variable is no longer needed
 
 
             let currentBlockData = null;
@@ -457,17 +458,7 @@
                                 }
                             }
                             
-                            // Universal Cooldown Logic
-                            if (blockCooldowns[blockTitle]) {
-                                const completionTime = blockCooldowns[blockTitle];
-                                const endTime = completionTime + COOLDOWN_TIME;
-                                if (Date.now() < endTime) {
-                                    button.disabled = true;
-                                    button.classList.add('opacity-60', 'cursor-not-allowed', 'on-cooldown');
-                                    button.dataset.cooldownEnd = endTime;
-                                    button.innerHTML = formatRemainingTime(endTime - Date.now());
-                                }
-                            }
+                            // REMOVED: Universal Cooldown Logic block was here.
 
                             if (!button.disabled) {
                                 button.classList.add(group.hover, 'transition-transform', 'transform', 'hover:scale-105');
@@ -480,30 +471,7 @@
                 });
             }
 
-            function updateAllCooldownTimers() {
-                document.querySelectorAll('.on-cooldown').forEach(button => {
-                    const endTime = parseInt(button.dataset.cooldownEnd, 10);
-                    const remaining = endTime - Date.now();
-
-                    if (remaining > 0) {
-                        button.innerHTML = formatRemainingTime(remaining);
-                    } else {
-                        const title = button.dataset.blockTitle;
-                        if (title) {
-                            delete blockCooldowns[title];
-                            saveUserData();
-                        }
-                        button.disabled = false;
-                        button.classList.remove('opacity-60', 'cursor-not-allowed', 'on-cooldown');
-                        button.removeAttribute('data-cooldown-end');
-                        button.innerHTML = button.dataset.originalContent;
-                        
-                         if (button.className.includes('bg-teal-500')) button.classList.add('hover:bg-teal-600', 'transition-transform', 'transform', 'hover:scale-105');
-                         if (button.className.includes('bg-indigo-500')) button.classList.add('hover:bg-indigo-600', 'transition-transform', 'transform', 'hover:scale-105');
-                         if (button.className.includes('bg-rose-500')) button.classList.add('hover:bg-rose-600', 'transition-transform', 'transform', 'hover:scale-105');
-                    }
-                });
-            }
+            // REMOVED: updateAllCooldownTimers function is no longer needed.
 
             function startPractice(block, title) {
                 clearTimeouts();
@@ -648,15 +616,7 @@
             }
 
             function showCompletionScreen() {
-                const title = practiceTitle.textContent;
-
-                if (title.includes('ব্লক')) {
-                    blockCooldowns[title] = Date.now();
-                } else if ((title.includes('স্ল্যাব') || title.includes('বার')) && practiceCounts[title] >= 3) {
-                    blockCooldowns[title] = Date.now();
-                    delete practiceCounts[title]; 
-                }
-                
+                // REMOVED: Cooldown logic was here.
                 saveUserData();
 
                 practiceInterface.classList.add('hidden');
@@ -668,15 +628,8 @@
             function goToMainMenu() {
                 clearTimeouts();
                 
-                const title = practiceTitle.textContent;
-
+                // Save data if user exits a session early
                 if (wordsInCurrentBlock.length > 0) {
-                     if (title.includes('ব্লক')) {
-                        blockCooldowns[title] = Date.now();
-                    } else if ((title.includes('স্ল্যাব') || title.includes('বার')) && practiceCounts[title] >= 3) {
-                        blockCooldowns[title] = Date.now();
-                        delete practiceCounts[title];
-                    }
                     saveUserData();
                 }
 
@@ -706,9 +659,7 @@
             }
             
             function setupEventListeners() {
-                if (!cooldownInterval) {
-                    cooldownInterval = setInterval(updateAllCooldownTimers, 1000);
-                }
+                // REMOVED: Cooldown interval setup was here.
 
                 checkBtn.addEventListener('click', checkSpelling);
                 spellInput.addEventListener('keydown', (e) => {
@@ -797,3 +748,4 @@
 </body>
 
 </html>
+
