@@ -40,7 +40,7 @@
                 transform: translateY(0);
             }
         }
-        
+
         @keyframes score-update {
             0% { transform: scale(1); }
             50% { transform: scale(1.25); }
@@ -50,7 +50,7 @@
         .score-updated {
             animation: score-update 0.3s ease-in-out;
         }
-        
+
         @keyframes shrink {
             from { width: 100%; }
             to { width: 0%; }
@@ -59,21 +59,6 @@
         .shrinking-bar {
             animation: shrink 10s linear forwards;
         }
-
-        /* Loading Spinner */
-        .loader {
-            border: 4px solid #f3f3f3;
-            border-top: 4px solid #3498db;
-            border-radius: 50%;
-            width: 40px;
-            height: 40px;
-            animation: spin 1s linear infinite;
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
     </style>
 </head>
 
@@ -81,14 +66,8 @@
 
     <div id="app-container" class="min-h-screen flex items-center justify-center p-4">
 
-        <!-- Loading Indicator -->
-        <div id="loading-indicator" class="text-center">
-            <div class="loader mx-auto"></div>
-            <p class="mt-4 text-gray-400">লোড হচ্ছে...</p>
-        </div>
-
         <!-- Main Menu -->
-        <div id="main-menu" class="w-full max-w-4xl mx-auto fade-in hidden">
+        <div id="main-menu" class="w-full max-w-4xl mx-auto fade-in">
             <header class="text-center mb-8">
                 <h1 id="main-header" class="text-4xl font-bold tracking-tight text-teal-300">বাংলা বানান অনুশীলন</h1>
                 <p class="text-gray-400 mt-2">অনুশীলন শুরু করতে একটি ব্লক বেছে নিন।</p>
@@ -150,7 +129,7 @@
                             </button>
                         </div>
                         <div id="feedback-message" class="mt-4 text-center min-h-[24px] hidden items-center justify-center"></div>
-                        
+
                         <div id="timer-container" class="w-full h-1 bg-gray-700 rounded-full mt-2 hidden">
                             <div id="timer-bar" class="h-1 bg-rose-500 rounded-full"></div>
                         </div>
@@ -171,7 +150,7 @@
                 </div>
             </div>
         </div>
-        
+
         <!-- Completion Screen -->
         <div id="completion-screen" class="text-center hidden fade-in">
              <div class="glassmorphism p-8 rounded-2xl shadow-2xl">
@@ -205,7 +184,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
-    <script src="bengali_words.js?v=1.0.1"></script>
+    <script src="bengali_words.js"></script>
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
@@ -227,18 +206,16 @@
             const COLLECTION_NAME = 'userData_bn';
             let userId = null;
             let userDataUnsubscribe = null;
-            let isAppReady = false;
             const BLOCK_SIZE = 40;
 
             let wordBlocks = [], slabBlocks = [], barBlocks = [];
             let slabs = [], bars = [], deletedWords = [], filteredWords = [];
             let blockCooldowns = {}, practiceCounts = {};
-            
+
             let currentBlockData = null, currentWordIndex = 0, correctCount = 0, totalPoints = 0;
             let wordsInCurrentBlock = [], selectedVoice = null;
             let incorrectFeedbackTimeoutId = null, nextWordTimeoutId = null;
 
-            const loadingIndicator = document.getElementById('loading-indicator');
             const mainMenu = document.getElementById('main-menu');
             const practiceInterface = document.getElementById('practice-interface');
             const completionScreen = document.getElementById('completion-screen');
@@ -275,7 +252,7 @@
                     speechSynthesis.onvoiceschanged = loadVoices;
                 }
                 setupEventListeners();
-                
+
                 auth.onAuthStateChanged(async user => {
                     if (user) {
                         userId = user.uid;
@@ -285,7 +262,7 @@
                     }
                 });
             }
-            
+
             async function loadUserData() {
                 return new Promise((resolve) => {
                     if (userDataUnsubscribe) userDataUnsubscribe();
@@ -310,17 +287,9 @@
                         filterMasterWordList();
                         updateScoreDisplay();
                         updateAndRenderBlocks();
-
-                        if (!isAppReady) {
-                            loadingIndicator.classList.add('hidden');
-                            mainMenu.classList.remove('hidden');
-                            isAppReady = true;
-                        }
-
                         resolve();
                     }, error => {
                         console.error("Error loading user data:", error);
-                        loadingIndicator.innerHTML = '<p class="text-red-400">ডেটা লোড করতে ব্যর্থ হয়েছে। অনুগ্রহ করে পৃষ্ঠাটি রিফ্রেশ করুন।</p>';
                         resolve();
                     });
                 });
@@ -337,9 +306,9 @@
             }
 
             function filterMasterWordList() {
-                filteredWords = words.filter(wordObj => !deletedWords.includes(wordObj.word));
+                filteredWords = allWords.filter(wordObj => !deletedWords.includes(wordObj.word));
             }
-            
+
             function clearTimeouts() {
                 if (incorrectFeedbackTimeoutId) clearTimeout(incorrectFeedbackTimeoutId);
                 if (nextWordTimeoutId) clearTimeout(nextWordTimeoutId);
@@ -382,7 +351,7 @@
                 }
                 renderBlocks();
             }
-            
+
             function createGroupContainer(title) {
                 const container = document.createElement('div');
                 const titleEl = document.createElement('h3');
@@ -414,7 +383,7 @@
                             button.innerHTML = `<span class="text-2xl">${blockNum}</span><span class="text-xs mt-1">${group.title.split(' ')[1]}</span>`;
                             let blockTitle = (group.type === 'block') ? `ব্লক ${blockNum}` : (group.type === 'slab') ? `স্ল্যাব ${blockNum}` : `বার ${blockNum}`;
                             button.addEventListener('click', () => startPractice(block, blockTitle));
-                            
+
                             if (group.type === 'block') {
                                 const nextBlockRequiredScore = blockNum * 3500;
                                 const requiredScore = (blockNum - 1) * 3500;
@@ -491,7 +460,7 @@
                 const isCorrect = typedWord === correctWord;
                 const practiceTitleText = practiceTitle.textContent;
                 feedbackMessageEl.classList.remove('hidden');
-                
+
                 if (isCorrect) {
                     correctCount++;
                     totalPoints += practiceTitleText.includes('বার') ? 4 : practiceTitleText.includes('স্ল্যাব') ? 2 : 10;
@@ -547,6 +516,7 @@
                 practiceInterface.classList.add('hidden');
                 completionScreen.classList.add('hidden');
                 mainMenu.classList.remove('hidden');
+                loadUserData();
             }
 
             function updateProgress() {
@@ -555,7 +525,7 @@
                 progressText.textContent = `শব্দ ${currentNum} এর ${totalWords}`;
                 progressBar.style.width = `${totalWords > 0 ? (currentNum / totalWords) * 100 : 0}%`;
             }
-            
+
             function updateScoreDisplay(animate = false) {
                  liveScoreEl.textContent = totalPoints.toLocaleString('bn-BD');
                  mainMenuScore.textContent = totalPoints.toLocaleString('bn-BD');
@@ -564,7 +534,7 @@
                      setTimeout(() => liveScoreEl.classList.remove('score-updated'), 300);
                  }
             }
-            
+
             function setupEventListeners() {
                 checkBtn.addEventListener('click', checkSpelling);
                 spellInput.addEventListener('keydown', e => { if (e.key === 'Enter') checkSpelling(); });
@@ -593,30 +563,52 @@
                         addToSlabBtn.disabled = true;
                     }
                 });
-                addWordsBtn.addEventListener('click', () => addWordModal.classList.remove('hidden');
+                addWordsBtn.addEventListener('click', () => addWordModal.classList.remove('hidden'));
                 closeModalBtn.addEventListener('click', () => addWordModal.classList.add('hidden'));
-                
-                resetScoreBtn.addEventListener('click', async () => {
+
+                // BUG FIX: Rewritten reset button logic
+                // FINAL BUG FIX: Disconnect listener before resetting
+                resetScoreBtn.addEventListener('click', () => {
                     const pin = prompt("আপনার স্কোর এবং সমস্ত অগ্রগতি রিসেট করতে, পিন লিখুন: 2542");
                     if (pin === "2542") {
+                        // 1. Clear all local data immediately
+                        // 1. CRITICAL: Stop listening to prevent race conditions.
                         if (userDataUnsubscribe) {
                             userDataUnsubscribe();
                             userDataUnsubscribe = null;
                         }
+
+                        // 2. Clear local data
+                        totalPoints = 0;
+                        slabs = [];
+                        bars = [];
+                        deletedWords = []; 
+                        blockCooldowns = {};
+                        practiceCounts = {};
                         
-                        mainMenu.classList.add('hidden');
-                        loadingIndicator.classList.remove('hidden');
+                        const clearedData = { totalPoints, slabs, bars, deletedWords, blockCooldowns, practiceCounts };
 
-                        try {
-                            await db.collection(COLLECTION_NAME).doc(userId).delete();
-                            await loadUserData();
-                            alert("আপনার অগ্রগতি সফলভাবে মুছে ফেলা হয়েছে।");
-                        } catch (error) {
-                             console.error("Critical error during reset:", error);
-                             alert("অগ্রগতি মোছার সময় একটি গুরুতর ত্রুটি হয়েছে।");
-                             await loadUserData(); // Attempt to reconnect
-                        }
+                        // 2. Force a re-filter and re-render with the cleared lists
+                        filterMasterWordList(); 
+                        updateAndRenderBlocks(); 
+                        updateScoreDisplay();
 
+                        // 3. Now, save this cleared state to Firebase
+                        saveUserData().then(() => {
+                           alert("আপনার অগ্রগতি রিসেট করা হয়েছে।");
+                        // 3. Forcefully overwrite the document on Firebase
+                        db.collection(COLLECTION_NAME).doc(userId).set(clearedData).then(() => {
+                            // 4. SUCCESS: Now that server is clean, restart the listener.
+                            loadUserData(); 
+                            alert("আপনার অগ্রগতি সফলভাবে রিসেট করা হয়েছে।");
+                        }).catch(error => {
+                            console.error("Failed to save reset data:", error);
+                            alert("অগ্রগতি রিসেট করতে একটি ত্রুটি হয়েছে।");
+                            console.error("Critical error during reset:", error);
+                            alert("অগ্রগতি রিসেট করার সময় একটি গুরুতর ত্রুটি হয়েছে।");
+                            // Attempt to reconnect anyway
+                            loadUserData();
+                        });
                     } else if (pin) {
                         alert("ভুল পিন।");
                     }
@@ -627,7 +619,7 @@
                     const newWord = document.getElementById('new-word').value.trim();
                     if(newWord){
                         const newWordObj = { word: newWord };
-                        words.push(newWordObj);
+                        allWords.push(newWordObj);
                         filterMasterWordList();
                         updateAndRenderBlocks();
                         addWordModal.classList.add('hidden');
@@ -643,4 +635,4 @@
 </body>
 
 </html>
-
+~
