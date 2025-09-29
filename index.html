@@ -337,7 +337,7 @@
             }
 
             function filterMasterWordList() {
-                filteredWords = allWords.filter(wordObj => !deletedWords.includes(wordObj.word));
+                filteredWords = words.filter(wordObj => !deletedWords.includes(wordObj.word));
             }
             
             function clearTimeouts() {
@@ -627,7 +627,7 @@
                     const newWord = document.getElementById('new-word').value.trim();
                     if(newWord){
                         const newWordObj = { word: newWord };
-                        allWords.push(newWordObj);
+                        words.push(newWordObj);
                         filterMasterWordList();
                         updateAndRenderBlocks();
                         addWordModal.classList.add('hidden');
