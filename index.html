@@ -59,6 +59,21 @@
         .shrinking-bar {
             animation: shrink 10s linear forwards;
         }
+
+        /* Loading Spinner */
+        .loader {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #3498db;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
     </style>
 </head>
 
@@ -66,8 +81,14 @@
 
     <div id="app-container" class="min-h-screen flex items-center justify-center p-4">
 
+        <!-- Loading Indicator -->
+        <div id="loading-indicator" class="text-center">
+            <div class="loader mx-auto"></div>
+            <p class="mt-4 text-gray-400">লোড হচ্ছে...</p>
+        </div>
+
         <!-- Main Menu -->
-        <div id="main-menu" class="w-full max-w-4xl mx-auto fade-in">
+        <div id="main-menu" class="w-full max-w-4xl mx-auto fade-in hidden">
             <header class="text-center mb-8">
                 <h1 id="main-header" class="text-4xl font-bold tracking-tight text-teal-300">বাংলা বানান অনুশীলন</h1>
                 <p class="text-gray-400 mt-2">অনুশীলন শুরু করতে একটি ব্লক বেছে নিন।</p>
@@ -206,6 +227,7 @@
             const COLLECTION_NAME = 'userData_bn';
             let userId = null;
             let userDataUnsubscribe = null;
+            let isAppReady = false;
             const BLOCK_SIZE = 40;
 
             let wordBlocks = [], slabBlocks = [], barBlocks = [];
@@ -216,6 +238,7 @@
             let wordsInCurrentBlock = [], selectedVoice = null;
             let incorrectFeedbackTimeoutId = null, nextWordTimeoutId = null;
 
+            const loadingIndicator = document.getElementById('loading-indicator');
             const mainMenu = document.getElementById('main-menu');
             const practiceInterface = document.getElementById('practice-interface');
             const completionScreen = document.getElementById('completion-screen');
@@ -277,6 +300,7 @@
                             blockCooldowns = data.blockCooldowns || {};
                             practiceCounts = data.practiceCounts || {};
                         } else {
+                            // This case handles when a user is new OR after their data is deleted.
                             totalPoints = 0;
                             slabs = [];
                             bars = [];
@@ -287,9 +311,17 @@
                         filterMasterWordList();
                         updateScoreDisplay();
                         updateAndRenderBlocks();
+
+                        if (!isAppReady) {
+                            loadingIndicator.classList.add('hidden');
+                            mainMenu.classList.remove('hidden');
+                            isAppReady = true;
+                        }
+
                         resolve();
                     }, error => {
                         console.error("Error loading user data:", error);
+                        loadingIndicator.innerHTML = '<p class="text-red-400">ডেটা লোড করতে ব্যর্থ হয়েছে। অনুগ্রহ করে পৃষ্ঠাটি রিফ্রেশ করুন।</p>';
                         resolve();
                     });
                 });
@@ -516,7 +548,6 @@
                 practiceInterface.classList.add('hidden');
                 completionScreen.classList.add('hidden');
                 mainMenu.classList.remove('hidden');
-                loadUserData();
             }
 
             function updateProgress() {
@@ -566,34 +597,25 @@
                 addWordsBtn.addEventListener('click', () => addWordModal.classList.remove('hidden'));
                 closeModalBtn.addEventListener('click', () => addWordModal.classList.add('hidden'));
                 
-                // FINAL BUG FIX: Disconnect listener before resetting
                 resetScoreBtn.addEventListener('click', () => {
                     const pin = prompt("আপনার স্কোর এবং সমস্ত অগ্রগতি রিসেট করতে, পিন লিখুন: 2542");
                     if (pin === "2542") {
-                        // 1. CRITICAL: Stop listening to prevent race conditions.
                         if (userDataUnsubscribe) {
                             userDataUnsubscribe();
                             userDataUnsubscribe = null;
                         }
-
-                        // 2. Clear local data
-                        totalPoints = 0;
-                        slabs = [];
-                        bars = [];
-                        deletedWords = []; 
-                        blockCooldowns = {};
-                        practiceCounts = {};
                         
-                        const clearedData = { totalPoints, slabs, bars, deletedWords, blockCooldowns, practiceCounts };
-
-                        // 3. Forcefully overwrite the document on Firebase
-                        db.collection(COLLECTION_NAME).doc(userId).set(clearedData).then(() => {
-                            // 4. SUCCESS: Now that server is clean, restart the listener.
-                            loadUserData(); 
-                            alert("আপনার অগ্রগতি সফলভাবে রিসেট করা হয়েছে।");
+                        // Definitive Fix: Delete the document from Firebase
+                        db.collection(COLLECTION_NAME).doc(userId).delete().then(() => {
+                            // After deletion, re-initialize the app state from scratch
+                            isAppReady = false; // Force re-initialization
+                            mainMenu.classList.add('hidden');
+                            loadingIndicator.classList.remove('hidden');
+                            loadUserData(); // This will now create a fresh state
+                            alert("আপনার অগ্রগতি সফলভাবে মুছে ফেলা হয়েছে।");
                         }).catch(error => {
-                            console.error("Critical error during reset:", error);
-                            alert("অগ্রগতি রিসেট করার সময় একটি গুরুতর ত্রুটি হয়েছে।");
+                            console.error("Critical error during delete:", error);
+                            alert("অগ্রগতি মোছার সময় একটি গুরুতর ত্রুটি হয়েছে।");
                             // Attempt to reconnect anyway
                             loadUserData();
                         });
