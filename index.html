@@ -1,631 +1,579 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="bn">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>বাংলা বানান অনুশীলন</title>
-    
-    <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    
-    <!-- Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    
-    <!-- FontAwesome -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
-    <!-- Firebase -->
-    <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-auth-compat.js"></script>
-    
-    <style>
-        * {
-            font-family: 'Hind Siliguri', sans-serif;
-        }
-        
-        body {
-            background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
-            min-height: 100vh;
-        }
-        
-        .glass {
-            background: rgba(255, 255, 255, 0.05);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.37);
-        }
-        
-        .glass-hover:hover {
-            background: rgba(255, 255, 255, 0.08);
-            transform: translateY(-2px);
-            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
-        }
-        
-        .btn-primary {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            transition: all 0.3s ease;
-        }
-        
-        .btn-primary:hover {
-            transform: scale(1.05);
-            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.4);
-        }
-        
-        .btn-success {
-            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
-        }
-        
-        .btn-danger {
-            background: linear-gradient(135deg, #fc5c7d 0%, #eb3349 100%);
-        }
-        
-        .progress-bar {
-            background: linear-gradient(90deg, #667eea, #764ba2, #f093fb);
-            background-size: 200% 100%;
-            animation: gradient 2s ease infinite;
-        }
-        
-        @keyframes gradient {
-            0% { background-position: 0% 50%; }
-            50% { background-position: 100% 50%; }
-            100% { background-position: 0% 50%; }
-        }
-        
-        .fade-in {
-            animation: fadeIn 0.5s ease-in;
-        }
-        
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        
-        .pulse {
-            animation: pulse 2s infinite;
-        }
-        
-        @keyframes pulse {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.05); }
-        }
-    </style>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>বাংলা বানান অনুশীলন</title>
+
+  <!-- Tailwind CDN (play-cdn for single file) -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Font & Icons -->
+  <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@300;400;600;700&display=swap" rel="stylesheet">
+  <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
+
+  <style>
+    :root { --glass-bg: rgba(255,255,255,0.04); }
+    html,body{height:100%}
+    body{
+      font-family: 'Hind Siliguri', system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+      background: linear-gradient(180deg,#0f172a 0%, #020617 100%);
+      color: #e6eef8;
+    }
+
+    /* Glassmorphism card */
+    .glass {
+      background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.02));
+      backdrop-filter: blur(8px) saturate(120%);
+      border: 1px solid rgba(255,255,255,0.06);
+    }
+
+    /* Smooth transitions */
+    .btn-anim{transition:all .18s ease}
+    .word-btn-anim{transition:transform .12s ease, box-shadow .12s ease}
+
+  </style>
 </head>
-<body class="text-white">
-    <!-- Loading Screen -->
-    <div id="loadingScreen" class="fixed inset-0 bg-black/80 flex items-center justify-center z-50">
-        <div class="text-center">
-            <i class="fas fa-spinner fa-spin text-6xl text-purple-400 mb-4"></i>
-            <p class="text-xl">লোড হচ্ছে...</p>
+<body class="p-6">
+  <div class="max-w-6xl mx-auto">
+    <header class="mb-6">
+      <div class="glass rounded-2xl p-4 flex items-center justify-between">
+        <h1 class="text-2xl font-semibold">বাংলা বানান অনুশীলন</h1>
+        <div class="flex items-center gap-4">
+          <div id="userScore" class="text-center">
+            <div class="text-xs text-gray-300">Score</div>
+            <div class="text-xl font-bold">0</div>
+          </div>
+          <button id="resetBtn" class="btn-anim px-4 py-2 rounded-lg glass hover:scale-105">অগ্রগতি রিসেট করুন</button>
         </div>
-    </div>
-    
-    <!-- Main Menu Screen -->
-    <div id="mainMenu" class="min-h-screen flex items-center justify-center p-4 hidden">
-        <div class="glass rounded-3xl p-8 max-w-6xl w-full fade-in">
-            <h1 class="text-5xl font-bold text-center mb-8 bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
-                বাংলা বানান অনুশীলন
-            </h1>
-            
-            <div class="text-center mb-8">
-                <div class="inline-block glass rounded-2xl px-8 py-4">
-                    <p class="text-gray-300 mb-2">মোট স্কোর</p>
-                    <p id="totalScore" class="text-4xl font-bold text-yellow-400">0</p>
-                </div>
-            </div>
-            
-            <div id="wordBlocks" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mb-8">
-                <!-- Word blocks will be dynamically generated -->
-            </div>
-            
-            <div class="flex flex-wrap gap-4 justify-center">
-                <button onclick="showAddWordModal()" class="glass glass-hover rounded-xl px-6 py-3 transition-all">
-                    <i class="fas fa-plus mr-2"></i> নতুন শব্দ যোগ করুন
-                </button>
-                <button onclick="resetProgress()" class="glass glass-hover rounded-xl px-6 py-3 transition-all">
-                    <i class="fas fa-redo mr-2"></i> অগ্রগতি রিসেট করুন
-                </button>
-            </div>
+      </div>
+    </header>
+
+    <main>
+      <!-- Main Menu -->
+      <section id="mainMenu" class="glass rounded-3xl p-6">
+        <div class="flex items-center justify-between mb-4">
+          <div>
+            <h2 class="text-xl font-semibold">ব্লক সমূহ</h2>
+            <p class="text-sm text-gray-300">মাস্টার তালিকা ব্লক প্রতি ৪০ শব্দে ভাগ করা হয়</p>
+          </div>
+          <div class="flex gap-3">
+            <button id="addWordBtn" class="btn-anim px-4 py-2 rounded-lg glass hover:scale-105"><i class="fa fa-plus mr-2"></i> নতুন শব্দ যোগ করুন</button>
+          </div>
         </div>
-    </div>
-    
-    <!-- Practice Screen -->
-    <div id="practiceScreen" class="min-h-screen flex items-center justify-center p-4 hidden">
-        <div class="glass rounded-3xl p-8 max-w-4xl w-full fade-in">
-            <div class="flex justify-between items-center mb-6">
-                <button onclick="backToMenu()" class="glass glass-hover rounded-xl px-4 py-2 transition-all">
-                    <i class="fas fa-arrow-left mr-2"></i> ফিরে যান
-                </button>
-                <h2 id="blockTitle" class="text-2xl font-bold">ব্লক 1</h2>
-                <div class="glass rounded-xl px-4 py-2">
-                    <span id="currentScore">0</span> / <span id="totalWords">0</span>
-                </div>
-            </div>
-            
-            <div class="mb-6">
-                <div class="w-full bg-gray-700 rounded-full h-4 overflow-hidden">
-                    <div id="progressBar" class="progress-bar h-full rounded-full transition-all duration-500" style="width: 0%"></div>
-                </div>
-            </div>
-            
-            <div class="text-center mb-8">
-                <div class="mb-6">
-                    <button onclick="speakWord()" class="btn-primary text-white rounded-full w-20 h-20 text-3xl pulse">
-                        <i class="fas fa-volume-up"></i>
-                    </button>
-                </div>
-                
-                <input type="text" id="wordInput" 
-                       class="w-full glass rounded-2xl px-6 py-4 text-2xl text-center focus:outline-none focus:ring-4 focus:ring-purple-400/50"
-                       placeholder="শব্দটি টাইপ করুন..."
-                       autocomplete="off">
-                
-                <div id="feedback" class="mt-6 min-h-[100px]">
-                    <!-- Feedback will appear here -->
-                </div>
-                
-                <div id="actionButtons" class="hidden mt-6 flex gap-4 justify-center">
-                    <button onclick="addToPractice()" class="glass glass-hover rounded-xl px-6 py-3 transition-all">
-                        <i class="fas fa-bookmark mr-2"></i> অনুশীলন করুন
-                    </button>
-                    <button onclick="deleteWord()" class="glass glass-hover rounded-xl px-6 py-3 transition-all text-red-400">
-                        <i class="fas fa-trash mr-2"></i> শব্দ মুছুন
-                    </button>
-                </div>
-            </div>
+
+        <div id="blocksGrid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4"></div>
+
+        <div id="specialDecks" class="mt-6">
+          <h3 class="text-lg font-medium mb-2">বিশেষ ডেকস (Slabs & Bars)</h3>
+          <div id="slabsBarsList" class="flex gap-3 flex-wrap"></div>
         </div>
-    </div>
-    
-    <!-- Add Word Modal -->
-    <div id="addWordModal" class="fixed inset-0 bg-black/80 flex items-center justify-center z-50 hidden">
-        <div class="glass rounded-3xl p-8 max-w-md w-full m-4">
-            <h3 class="text-2xl font-bold mb-6">নতুন শব্দ যোগ করুন</h3>
-            <input type="text" id="newWordInput" 
-                   class="w-full glass rounded-xl px-4 py-3 mb-4 focus:outline-none focus:ring-4 focus:ring-purple-400/50"
-                   placeholder="বাংলা শব্দ লিখুন...">
-            <div class="flex gap-4">
-                <button onclick="addNewWord()" class="btn-primary flex-1 rounded-xl px-6 py-3 text-white">
-                    যোগ করুন
-                </button>
-                <button onclick="closeAddWordModal()" class="glass glass-hover flex-1 rounded-xl px-6 py-3 transition-all">
-                    বাতিল
-                </button>
-            </div>
+      </section>
+
+      <!-- Practice Screen (hidden default) -->
+      <section id="practiceScreen" class="glass rounded-3xl p-6 mt-6 hidden">
+        <div class="flex items-center justify-between mb-4">
+          <div>
+            <h2 id="practiceTitle" class="text-xl font-semibold">ব্লক 1</h2>
+            <div class="text-sm text-gray-300">Score: <span id="blockScore">0</span> • Progress: <span id="progressText">0/0</span></div>
+          </div>
+          <div class="flex items-center gap-3">
+            <button id="backToMenu" class="btn-anim px-4 py-2 rounded-lg glass hover:scale-105"><i class="fa fa-arrow-left mr-2"></i> মেনু</button>
+          </div>
         </div>
-    </div>
-    
-    <!-- External Bengali Words Script -->
-    <script src="bengali_words.js"></script>
-    
-    <script>
-        // Firebase Configuration
-        const firebaseConfig = {
-            apiKey: "AIzaSyAKb836EZeSOoawW9gmQ_oQuTbjuvQbBLg",
-            authDomain: "bengali-spelling.firebaseapp.com",
-            projectId: "bengali-spelling",
-            storageBucket: "bengali-spelling.firebasestorage.app",
-            messagingSenderId: "402411944079",
-            appId: "1:402411944079:web:211135597c0d5dab70d8fa",
-            measurementId: "G-NZ03QPZYZK"
-        };
-        
-        // Initialize Firebase
-        firebase.initializeApp(firebaseConfig);
-        const db = firebase.firestore();
-        const auth = firebase.auth();
-        
-        // Global Variables
-        let currentUser = null;
-        let normalizedWords = [];
-        let currentBlock = [];
-        let currentWordIndex = 0;
-        let currentWord = '';
-        let score = 0;
-        let totalScore = 0;
-        let deletedWords = new Set();
-        let slabs = {};
-        let bars = {};
-        let practiceWords = new Set();
-        let isSlabPractice = false;
-        let isBarPractice = false;
-        let currentSlabId = null;
-        let currentBarId = null;
-        
-        // Initialize App
-        async function initApp() {
-            try {
-                // Sign in anonymously
-                const userCredential = await auth.signInAnonymously();
-                currentUser = userCredential.user;
-                console.log('Signed in as:', currentUser.uid);
-                
-                // Normalize word data
-                normalizeWordData();
-                
-                // Load user data from Firestore
-                await loadUserData();
-                
-                // Setup UI
-                setupMainMenu();
-                
-                // Hide loading screen
-                document.getElementById('loadingScreen').classList.add('hidden');
-                document.getElementById('mainMenu').classList.remove('hidden');
-                
-                // Setup input handler
-                setupInputHandler();
-            } catch (error) {
-                console.error('Error initializing app:', error);
-                alert('Error loading app. Please refresh the page.');
-            }
+
+        <div class="mb-4">
+          <div class="w-full bg-gray-800 rounded-full h-3 overflow-hidden">
+            <div id="progressBar" class="h-3 rounded-full" style="width:0%; background: linear-gradient(90deg,#10b981,#06b6d4);"></div>
+          </div>
+        </div>
+
+        <div class="flex flex-col md:flex-row gap-6 items-start">
+          <div class="flex-1">
+            <div class="text-6xl font-bold mb-4" id="wordDisplay">—</div>
+            <div class="flex gap-3 mb-3">
+              <button id="speakBtn" class="btn-anim px-4 py-2 rounded-lg glass hover:scale-105"><i class="fa fa-volume-up mr-2"></i> বল</button>
+              <button id="skipBtn" class="btn-anim px-4 py-2 rounded-lg glass hover:scale-105">পাশ কাটুন</button>
+            </div>
+
+            <div>
+              <input id="answerInput" autocomplete="off" class="w-full p-3 rounded-lg glass text-lg" placeholder="এখানে বানান লিখুন" />
+            </div>
+
+            <div id="feedback" class="mt-4 text-lg min-h-[56px]"></div>
+          </div>
+
+          <div class="w-80">
+            <div class="glass rounded-xl p-4">
+              <h4 class="font-medium mb-2">শব্দ বিবরণ</h4>
+              <div class="text-sm text-gray-300 mb-4">এই কার্ড থেকে আপনি শব্দ মুছতে এবং প্র্যাকটিস তালিকায় যোগ করতে পারবেন।</div>
+              <div class="flex flex-col gap-2">
+                <button id="addToPractice" class="btn-anim px-3 py-2 rounded-lg glass hover:scale-105">অনুশীলন করুন</button>
+                <button id="deleteWordBtn" class="btn-anim px-3 py-2 rounded-lg glass hover:scale-105">শব্দ মুছুন</button>
+              </div>
+            </div>
+
+            <div class="glass rounded-xl p-4 mt-4">
+              <h4 class="font-medium mb-2">পরিসংখ্যান</h4>
+              <div class="text-sm text-gray-300">মোট উত্তর: <span id="totalAnswered">0</span></div>
+              <div class="text-sm text-gray-300">সঠিক: <span id="totalCorrect">0</span></div>
+              <div class="text-sm text-gray-300">ভুল: <span id="totalWrong">0</span></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- Hidden area for messages -->
+  <div id="toast" class="fixed bottom-6 left-1/2 transform -translate-x-1/2"></div>
+
+  <!-- The app expects a separate bengali_words.js which defines `words` array. If not present, a small fallback will be used. -->
+
+  <script>
+  // -------------------------------
+  // Configuration & Globals
+  // -------------------------------
+  const FIREBASE_CONFIG = {
+    apiKey: "AIzaSyAKb836EZeSOoawW9gmQ_oQuTbjuvQbBLg",
+    authDomain: "bengali-spelling.firebaseapp.com",
+    projectId: "bengali-spelling",
+    storageBucket: "bengali-spelling.firebasestorage.app",
+    messagingSenderId: "402411944079",
+    appId: "1:402411944079:web:211135597c0d5dab70d8fa",
+    measurementId: "G-NZ03QPZYZK"
+  };
+
+  // Internal app state
+  let MASTER_WORDS = []; // normalized [{word: 'বাংলা', id: <uuid>}, ...]
+  let blocks = []; // array of blocks (each block: {name, words: [...]})
+  let currentBlock = null;
+  let currentIndex = 0;
+  let userState = {
+    uid: null,
+    totalPoints: 0,
+    deletedWords: [],
+    slabs: {}, // { slabName: [wordIds] }
+    bars: {}, // { barName: [wordIds] }
+    practiceLists: {}, // custom practice decks
+    stats: { answered:0, correct:0, wrong:0 }
+  };
+
+  // Utilities
+  function uidShort(){return Math.random().toString(36).slice(2,9)}
+  function makeId(){ return Date.now().toString(36) + '-' + Math.random().toString(36).slice(2,6)}
+
+  function showToast(msg, kind='info'){
+    const el = document.createElement('div')
+    el.className = 'glass inline-block px-4 py-2 rounded-lg mr-2 text-sm'
+    el.textContent = msg
+    document.getElementById('toast').appendChild(el)
+    setTimeout(()=> el.remove(), 3000)
+  }
+
+  // -------------------------------
+  // Data normalization (Core Requirement)
+  // -------------------------------
+  function normalizeWords(raw){
+    // raw may be undefined, array of strings, or array of objects (with word key or other)
+    if(!Array.isArray(raw)) return []
+    return raw.map(item => {
+      if(typeof item === 'string') return { word: item, id: makeId() }
+      if(typeof item === 'object' && item !== null){
+        if(item.word && typeof item.word === 'string') return { ...item, id: item.id || makeId() }
+        // If object with unknown shape, try to stringify
+        if(item.hasOwnProperty('label')) return { word: String(item.label), id: item.id || makeId() }
+        // fallback
+        return { word: String(Object.values(item)[0]||''), id: item.id || makeId() }
+      }
+      return { word: String(item), id: makeId() }
+    }).filter(x => x.word && x.word.trim().length)
+  }
+
+  // -------------------------------
+  // Words loading (attempt to read external bengali_words.js)
+  // -------------------------------
+  (function loadExternalWords(){
+    // We'll try to load bengali_words.js by creating a script tag. If it doesn't define `words`, we fallback.
+    const s = document.createElement('script')
+    s.src = 'bengali_words.js'
+    s.onload = () => {
+      console.log('bengali_words.js loaded:', typeof words !== 'undefined')
+      if(typeof words !== 'undefined') {
+        MASTER_WORDS = normalizeWords(words)
+        initApp()
+      } else {
+        fallback()
+      }
+    }
+    s.onerror = ()=> fallback()
+    document.head.appendChild(s)
+
+    function fallback(){
+      console.warn('bengali_words.js not found or bad format — using small fallback list.')
+      const fallbackList = ['বাংলা','অনুশীলন','শব্দ','অভ্যাস','শিক্ষা','বিদ্যা','বিদ্যালয়','ভালবাসা','বন্ধু','পরীক্ষা']
+      MASTER_WORDS = normalizeWords(fallbackList)
+      initApp()
+    }
+  })();
+
+  // -------------------------------
+  // Build blocks of 40 words
+  // -------------------------------
+  function buildBlocks(){
+    blocks = []
+    const filtered = MASTER_WORDS.filter(w => !userState.deletedWords.includes(w.id))
+    for(let i=0;i<filtered.length;i+=40){
+      const slice = filtered.slice(i,i+40)
+      blocks.push({ name: `ব্লক ${Math.floor(i/40)+1}`, words: slice })
+    }
+
+    // Add slabs & bars as special decks
+    // slabs and bars are shown separately
+  }
+
+  // -------------------------------
+  // Firebase init & persistence
+  // -------------------------------
+  let firebaseApp, firestore, auth
+  async function initFirebase(){
+    try{
+      // load firebase scripts dynamically (v9 compat CDN)
+      await loadScript('https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js')
+      await loadScript('https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js')
+      await loadScript('https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js')
+
+      firebaseApp = firebase.initializeApp(FIREBASE_CONFIG)
+      auth = firebase.auth()
+      firestore = firebase.firestore()
+
+      await auth.signInAnonymously()
+      userState.uid = auth.currentUser.uid
+      console.log('Signed in anonymously:', userState.uid)
+
+      // load user progress from firestore
+      const docRef = firestore.collection('users').doc(userState.uid)
+      const doc = await docRef.get()
+      if(doc.exists){
+        const data = doc.data()
+        Object.assign(userState, data)
+        console.log('Loaded user state', userState)
+      } else {
+        await docRef.set(userState)
+      }
+
+    }catch(e){
+      console.warn('Firebase init failed:', e)
+      showToast('Firebase init failed — progress will not be saved.','error')
+    }
+  }
+
+  function loadScript(src){
+    return new Promise((resolve,reject)=>{
+      const s = document.createElement('script')
+      s.src = src
+      s.onload = resolve
+      s.onerror = reject
+      document.head.appendChild(s)
+    })
+  }
+
+  async function saveUserState(){
+    if(!firestore || !userState.uid) return
+    try{
+      await firestore.collection('users').doc(userState.uid).set(userState)
+    }catch(e){ console.warn('Save failed', e) }
+  }
+
+  // -------------------------------
+  // UI Rendering
+  // -------------------------------
+  function renderBlocksGrid(){
+    const container = document.getElementById('blocksGrid')
+    container.innerHTML = ''
+    blocks.forEach((b, idx) => {
+      const card = document.createElement('div')
+      card.className = 'glass p-4 rounded-xl cursor-pointer word-btn-anim hover:scale-105'
+      card.innerHTML = `
+        <div class="flex items-center justify-between">
+          <div>
+            <div class="font-semibold">${b.name}</div>
+            <div class="text-sm text-gray-300">শব্দ: ${b.words.length}</div>
+          </div>
+          <div class="text-3xl">📚</div>
+        </div>
+      `
+      card.onclick = ()=> openBlock(idx)
+      container.appendChild(card)
+    })
+
+    // Update score display
+    document.getElementById('userScore').querySelector('.text-xl').textContent = userState.totalPoints || 0
+  }
+
+  function renderSpecialDecks(){
+    const el = document.getElementById('slabsBarsList')
+    el.innerHTML = ''
+
+    // Slabs
+    for(const [slabName, ids] of Object.entries(userState.slabs||{})){
+      const btn = document.createElement('button')
+      btn.className = 'glass px-3 py-2 rounded-lg btn-anim'
+      btn.textContent = `${slabName} (${ids.length})`
+      btn.onclick = () => openCustomDeck(slabName,'slab')
+      el.appendChild(btn)
+    }
+
+    for(const [barName, ids] of Object.entries(userState.bars||{})){
+      const btn = document.createElement('button')
+      btn.className = 'glass px-3 py-2 rounded-lg btn-anim'
+      btn.textContent = `${barName} (${ids.length})`
+      btn.onclick = () => openCustomDeck(barName,'bar')
+      el.appendChild(btn)
+    }
+  }
+
+  // -------------------------------
+  // Navigation & Practice logic
+  // -------------------------------
+  function openBlock(idx){
+    currentBlock = { type: 'block', index: idx, name: blocks[idx].name, words: blocks[idx].words.slice() }
+    startPractice()
+  }
+
+  function openCustomDeck(name, kind){
+    // build words from ids
+    const ids = (kind==='slab') ? (userState.slabs[name]||[]) : (userState.bars[name]||[])
+    const words = MASTER_WORDS.filter(w=> ids.includes(w.id))
+    currentBlock = { type: kind, name, words }
+    startPractice()
+  }
+
+  function startPractice(){
+    if(!currentBlock || !currentBlock.words.length){ showToast('শূন্য ডেক (empty deck)'); return }
+    currentIndex = 0
+    document.getElementById('mainMenu').classList.add('hidden')
+    document.getElementById('practiceScreen').classList.remove('hidden')
+    updatePracticeUI()
+  }
+
+  function updatePracticeUI(){
+    const total = currentBlock.words.length
+    const current = Math.min(currentIndex, total-1)
+    const wobj = currentBlock.words[current]
+    document.getElementById('practiceTitle').textContent = currentBlock.name
+    document.getElementById('blockScore').textContent = userState.totalPoints || 0
+    document.getElementById('progressText').textContent = `${current+1}/${total}`
+    const pct = Math.round(((current+1)/total)*100)
+    document.getElementById('progressBar').style.width = pct + '%'
+    document.getElementById('wordDisplay').textContent = '\u25CB' // don't show the word initially — we want the user to type
+    document.getElementById('answerInput').value = ''
+    document.getElementById('answerInput').focus()
+    document.getElementById('feedback').innerHTML = ''
+  }
+
+  function revealCurrentWord(){
+    const wobj = currentBlock.words[currentIndex]
+    if(!wobj) return ''
+    return wobj.word
+  }
+
+  async function handleAnswer(){
+    const userText = document.getElementById('answerInput').value.trim()
+    const correct = revealCurrentWord()
+    userState.stats.answered++
+    if(userText === correct){
+      userState.stats.correct++
+      userState.totalPoints = (userState.totalPoints || 0) + 1
+      showFeedback(true, 'সঠিক!')
+      // after correct, offer add to practice or delete. keep word in flow for next.
+      // No change to slabs/bars on correct; if word existed in slab/bar we can consider removing it (optional)
+      await saveUserState()
+      setTimeout(()=> moveNext(true), 900)
+    } else {
+      userState.stats.wrong++
+      showFeedback(false, `সঠিক বানান: ${correct}`)
+      // Add to slab
+      const slabName = `Slab ${new Date().toISOString().slice(0,10)}`
+      userState.slabs[slabName] = userState.slabs[slabName] || []
+      if(!userState.slabs[slabName].includes(currentBlock.words[currentIndex].id))
+        userState.slabs[slabName].push(currentBlock.words[currentIndex].id)
+
+      // If already in slab previously, move to bar
+      for(const [name, arr] of Object.entries(userState.slabs)){
+        if(arr.includes(currentBlock.words[currentIndex].id) && name !== slabName){
+          // promote to bar
+          const barName = `Bar ${new Date().toISOString().slice(0,10)}`
+          userState.bars[barName] = userState.bars[barName] || []
+          if(!userState.bars[barName].includes(currentBlock.words[currentIndex].id))
+            userState.bars[barName].push(currentBlock.words[currentIndex].id)
         }
-        
-        // Normalize word data to handle both formats
-        function normalizeWordData() {
-            if (!window.words || !Array.isArray(window.words)) {
-                console.error('No words array found in bengali_words.js');
-                window.words = ['বাংলা', 'অনুশীলন', 'শব্দ', 'বানান', 'পরীক্ষা'];
-            }
-            
-            normalizedWords = window.words.map(item => {
-                if (typeof item === 'string') {
-                    return { word: item };
-                } else if (typeof item === 'object' && item.word) {
-                    return { word: item.word };
-                } else {
-                    console.warn('Invalid word format:', item);
-                    return null;
-                }
-            }).filter(item => item !== null);
-            
-            console.log('Normalized words:', normalizedWords.length);
-        }
-        
-        // Load user data from Firestore
-        async function loadUserData() {
-            if (!currentUser) return;
-            
-            try {
-                const doc = await db.collection('users').doc(currentUser.uid).get();
-                if (doc.exists) {
-                    const data = doc.data();
-                    totalScore = data.totalScore || 0;
-                    deletedWords = new Set(data.deletedWords || []);
-                    slabs = data.slabs || {};
-                    bars = data.bars || {};
-                    practiceWords = new Set(data.practiceWords || []);
-                    
-                    document.getElementById('totalScore').textContent = totalScore;
-                }
-            } catch (error) {
-                console.error('Error loading user data:', error);
-            }
-        }
-        
-        // Save user data to Firestore
-        async function saveUserData() {
-            if (!currentUser) return;
-            
-            try {
-                await db.collection('users').doc(currentUser.uid).set({
-                    totalScore,
-                    deletedWords: Array.from(deletedWords),
-                    slabs,
-                    bars,
-                    practiceWords: Array.from(practiceWords),
-                    lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
-                });
-            } catch (error) {
-                console.error('Error saving user data:', error);
-            }
-        }
-        
-        // Setup main menu
-        function setupMainMenu() {
-            const container = document.getElementById('wordBlocks');
-            container.innerHTML = '';
-            
-            // Filter out deleted words
-            const activeWords = normalizedWords.filter(w => !deletedWords.has(w.word));
-            
-            // Create word blocks (40 words each)
-            const blockSize = 40;
-            const numBlocks = Math.ceil(activeWords.length / blockSize);
-            
-            for (let i = 0; i < numBlocks; i++) {
-                const blockWords = activeWords.slice(i * blockSize, (i + 1) * blockSize);
-                const block = createBlockElement(`ব্লক ${i + 1}`, blockWords.length, () => startPractice(blockWords, `ব্লক ${i + 1}`));
-                container.appendChild(block);
-            }
-            
-            // Add Slab blocks
-            Object.entries(slabs).forEach(([id, words]) => {
-                if (words.length > 0) {
-                    const block = createBlockElement(`Slab ${id}`, words.length, () => startSlabPractice(id), 'bg-gradient-to-br from-orange-500 to-red-500');
-                    container.appendChild(block);
-                }
-            });
-            
-            // Add Bar blocks
-            Object.entries(bars).forEach(([id, words]) => {
-                if (words.length > 0) {
-                    const block = createBlockElement(`Bar ${id}`, words.length, () => startBarPractice(id), 'bg-gradient-to-br from-red-600 to-purple-600');
-                    container.appendChild(block);
-                }
-            });
-            
-            // Add practice words block
-            if (practiceWords.size > 0) {
-                const block = createBlockElement('অনুশীলন তালিকা', practiceWords.size, () => startPractice(Array.from(practiceWords).map(w => ({word: w})), 'অনুশীলন তালিকা'), 'bg-gradient-to-br from-green-500 to-teal-500');
-                container.appendChild(block);
-            }
-        }
-        
-        // Create block element
-        function createBlockElement(title, count, onClick, bgClass = 'bg-gradient-to-br from-blue-500 to-purple-500') {
-            const block = document.createElement('div');
-            block.className = 'glass glass-hover rounded-2xl p-6 cursor-pointer transition-all';
-            block.onclick = onClick;
-            block.innerHTML = `
-                <div class="${bgClass} rounded-xl p-4 mb-4">
-                    <i class="fas fa-book text-3xl"></i>
-                </div>
-                <h3 class="font-bold mb-2">${title}</h3>
-                <p class="text-gray-300">${count} শব্দ</p>
-            `;
-            return block;
-        }
-        
-        // Start practice session
-        function startPractice(words, title) {
-            currentBlock = words.filter(w => !deletedWords.has(w.word));
-            currentWordIndex = 0;
-            score = 0;
-            isSlabPractice = false;
-            isBarPractice = false;
-            currentSlabId = null;
-            currentBarId = null;
-            
-            if (currentBlock.length === 0) {
-                alert('এই ব্লকে কোনো শব্দ নেই!');
-                return;
-            }
-            
-            document.getElementById('blockTitle').textContent = title;
-            document.getElementById('currentScore').textContent = score;
-            document.getElementById('totalWords').textContent = currentBlock.length;
-            
-            document.getElementById('mainMenu').classList.add('hidden');
-            document.getElementById('practiceScreen').classList.remove('hidden');
-            
-            nextWord();
-        }
-        
-        // Start Slab practice
-        function startSlabPractice(slabId) {
-            const words = slabs[slabId].map(w => ({word: w}));
-            isSlabPractice = true;
-            currentSlabId = slabId;
-            startPractice(words, `Slab ${slabId}`);
-        }
-        
-        // Start Bar practice
-        function startBarPractice(barId) {
-            const words = bars[barId].map(w => ({word: w}));
-            isBarPractice = true;
-            currentBarId = barId;
-            startPractice(words, `Bar ${barId}`);
-        }
-        
-        // Next word
-        function nextWord() {
-            if (currentWordIndex >= currentBlock.length) {
-                endPractice();
-                return;
-            }
-            
-            currentWord = currentBlock[currentWordIndex].word;
-            document.getElementById('wordInput').value = '';
-            document.getElementById('feedback').innerHTML = '';
-            document.getElementById('actionButtons').classList.add('hidden');
-            document.getElementById('wordInput').focus();
-            
-            updateProgress();
-            
-            // Auto-speak the word
-            setTimeout(() => speakWord(), 500);
-        }
-        
-        // Update progress bar
-        function updateProgress() {
-            const progress = (currentWordIndex / currentBlock.length) * 100;
-            document.getElementById('progressBar').style.width = progress + '%';
-        }
-        
-        // Speak word using Web Speech API
-        function speakWord() {
-            if ('speechSynthesis' in window) {
-                const utterance = new SpeechSynthesisUtterance(currentWord);
-                utterance.lang = 'bn-BD';
-                utterance.rate = 0.8;
-                speechSynthesis.speak(utterance);
-            }
-        }
-        
-        // Setup input handler
-        function setupInputHandler() {
-            const input = document.getElementById('wordInput');
-            input.addEventListener('keypress', (e) => {
-                if (e.key === 'Enter') {
-                    checkAnswer();
-                }
-            });
-        }
-        
-        // Check answer
-        async function checkAnswer() {
-            const input = document.getElementById('wordInput');
-            const answer = input.value.trim();
-            
-            if (!answer) return;
-            
-            const isCorrect = answer === currentWord;
-            const feedback = document.getElementById('feedback');
-            
-            if (isCorrect) {
-                score++;
-                totalScore++;
-                document.getElementById('currentScore').textContent = score;
-                document.getElementById('totalScore').textContent = totalScore;
-                
-                feedback.innerHTML = `
-                    <div class="text-3xl text-green-400 font-bold mb-4 fade-in">
-                        <i class="fas fa-check-circle mr-2"></i> সঠিক!
-                    </div>
-                `;
-                
-                document.getElementById('actionButtons').classList.remove('hidden');
-                
-                // Remove from slabs/bars if correct
-                if (isSlabPractice && currentSlabId) {
-                    slabs[currentSlabId] = slabs[currentSlabId].filter(w => w !== currentWord);
-                }
-                if (isBarPractice && currentBarId) {
-                    bars[currentBarId] = bars[currentBarId].filter(w => w !== currentWord);
-                }
-            } else {
-                feedback.innerHTML = `
-                    <div class="text-2xl text-red-400 mb-2 fade-in">
-                        <i class="fas fa-times-circle mr-2"></i> ভুল!
-                    </div>
-                    <div class="text-xl text-gray-300">
-                        সঠিক বানান: <span class="text-white font-bold">${currentWord}</span>
-                    </div>
-                `;
-                
-                // Add to slabs or bars
-                if (!isSlabPractice && !isBarPractice) {
-                    // First mistake - add to slab
-                    const slabId = Math.floor(Date.now() / 1000000);
-                    if (!slabs[slabId]) slabs[slabId] = [];
-                    if (!slabs[slabId].includes(currentWord)) {
-                        slabs[slabId].push(currentWord);
-                    }
-                } else if (isSlabPractice) {
-                    // Second mistake - move to bar
-                    const barId = Math.floor(Date.now() / 1000000);
-                    if (!bars[barId]) bars[barId] = [];
-                    if (!bars[barId].includes(currentWord)) {
-                        bars[barId].push(currentWord);
-                    }
-                    // Remove from slab
-                    if (currentSlabId) {
-                        slabs[currentSlabId] = slabs[currentSlabId].filter(w => w !== currentWord);
-                    }
-                }
-                
-                setTimeout(() => {
-                    currentWordIndex++;
-                    nextWord();
-                }, 3000);
-            }
-            
-            // Save progress
-            await saveUserData();
-        }
-        
-        // Add to practice list
-        function addToPractice() {
-            practiceWords.add(currentWord);
-            saveUserData();
-            currentWordIndex++;
-            nextWord();
-        }
-        
-        // Delete word
-        function deleteWord() {
-            deletedWords.add(currentWord);
-            saveUserData();
-            currentWordIndex++;
-            nextWord();
-        }
-        
-        // End practice session
-        function endPractice() {
-            const feedback = document.getElementById('feedback');
-            feedback.innerHTML = `
-                <div class="text-3xl font-bold mb-4">
-                    অভিনন্দন! 🎉
-                </div>
-                <div class="text-xl">
-                    আপনি ${score} / ${currentBlock.length} শব্দ সঠিক করেছেন
-                </div>
-            `;
-            
-            setTimeout(() => backToMenu(), 3000);
-        }
-        
-        // Back to menu
-        function backToMenu() {
-            document.getElementById('practiceScreen').classList.add('hidden');
-            document.getElementById('mainMenu').classList.remove('hidden');
-            setupMainMenu();
-        }
-        
-        // Show add word modal
-        function showAddWordModal() {
-            document.getElementById('addWordModal').classList.remove('hidden');
-            document.getElementById('newWordInput').focus();
-        }
-        
-        // Close add word modal
-        function closeAddWordModal() {
-            document.getElementById('addWordModal').classList.add('hidden');
-            document.getElementById('newWordInput').value = '';
-        }
-        
-        // Add new word
-        async function addNewWord() {
-            const input = document.getElementById('newWordInput');
-            const word = input.value.trim();
-            
-            if (!word) return;
-            
-            // Add to normalized words
-            normalizedWords.push({ word });
-            
-            // Update bengali_words.js would require server-side code
-            // For now, just add to local array
-            if (window.words) {
-                window.words.push(word);
-            }
-            
-            closeAddWordModal();
-            setupMainMenu();
-            
-            alert('শব্দটি যোগ করা হয়েছে!');
-        }
-        
-        // Reset progress
-        async function resetProgress() {
-            if (confirm('আপনি কি নিশ্চিত যে আপনি সমস্ত অগ্রগতি রিসেট করতে চান?')) {
-                totalScore = 0;
-                deletedWords.clear();
-                slabs = {};
-                bars = {};
-                practiceWords.clear();
-                
-                document.getElementById('totalScore').textContent = totalScore;
-                
-                await saveUserData();
-                setupMainMenu();
-                
-                alert('অগ্রগতি রিসেট করা হয়েছে!');
-            }
-        }
-        
-        // Initialize app when DOM is loaded
-        document.addEventListener('DOMContentLoaded', initApp);
-    </script>
+      }
+
+      await saveUserState()
+      // automatically proceed next after short delay
+      setTimeout(()=> moveNext(false), 1200)
+    }
+
+    renderBlocksGrid(); renderSpecialDecks(); updateUserScoreUI();
+  }
+
+  function showFeedback(isCorrect, text){
+    const f = document.getElementById('feedback')
+    f.innerHTML = ''
+    const el = document.createElement('div')
+    el.className = isCorrect ? 'text-green-400 font-semibold' : 'text-yellow-300'
+    el.textContent = text
+    f.appendChild(el)
+
+    // After answer: show action buttons
+    const actions = document.createElement('div')
+    actions.className = 'mt-3 flex gap-2'
+    const addBtn = document.createElement('button')
+    addBtn.className = 'glass px-3 py-2 rounded-lg btn-anim'
+    addBtn.textContent = 'অনুশীলন করুন'
+    addBtn.onclick = ()=> { addToPracticeList(currentBlock.words[currentIndex]); showToast('Added to practice list') }
+
+    const delBtn = document.createElement('button')
+    delBtn.className = 'glass px-3 py-2 rounded-lg btn-anim'
+    delBtn.textContent = 'শব্দ মুছুন'
+    delBtn.onclick = ()=> { deleteWord(currentBlock.words[currentIndex].id); showToast('শব্দ মুছে দেওয়া হয়েছে') }
+
+    actions.appendChild(addBtn)
+    actions.appendChild(delBtn)
+    f.appendChild(actions)
+  }
+
+  function addToPracticeList(wordObj){
+    const listName = 'My Practice'
+    userState.practiceLists[listName] = userState.practiceLists[listName] || []
+    if(!userState.practiceLists[listName].includes(wordObj.id)) userState.practiceLists[listName].push(wordObj.id)
+    saveUserState()
+    renderSpecialDecks()
+  }
+
+  function deleteWord(id){
+    if(!userState.deletedWords.includes(id)) userState.deletedWords.push(id)
+    saveUserState()
+    buildBlocks()
+    renderBlocksGrid()
+    // if deleted from current block, move to next
+    moveNext(true)
+  }
+
+  function moveNext(jumped=false){
+    currentIndex++
+    if(currentIndex >= currentBlock.words.length){
+      showToast('ডেক শেষ — মেনুতে ফিরুন')
+      document.getElementById('practiceScreen').classList.add('hidden')
+      document.getElementById('mainMenu').classList.remove('hidden')
+      currentBlock = null
+      return
+    }
+    updatePracticeUI()
+  }
+
+  // -------------------------------
+  // Helpers: UI buttons wiring
+  // -------------------------------
+  function wireUI(){
+    document.getElementById('addWordBtn').addEventListener('click', async ()=>{
+      const txt = prompt('নতুন শব্দ লিখুন (বাংলা):')
+      if(txt && txt.trim()){
+        const newObj = { word: txt.trim(), id: makeId() }
+        MASTER_WORDS.push(newObj)
+        buildBlocks(); renderBlocksGrid(); await saveUserState()
+      }
+    })
+
+    document.getElementById('resetBtn').addEventListener('click', ()=>{
+      if(confirm('আপনি কি নিশ্চিত? সব অগ্রগতি রিসেট করা হবে।')){
+        userState = { uid: userState.uid, totalPoints:0, deletedWords:[], slabs:{}, bars:{}, practiceLists:{}, stats:{answered:0,correct:0,wrong:0} }
+        saveUserState(); buildBlocks(); renderBlocksGrid(); renderSpecialDecks(); updateUserScoreUI(); showToast('প্রগেস রিসেট হয়েছে')
+      }
+    })
+
+    document.getElementById('backToMenu').addEventListener('click', ()=>{
+      document.getElementById('practiceScreen').classList.add('hidden')
+      document.getElementById('mainMenu').classList.remove('hidden')
+    })
+
+    document.getElementById('speakBtn').addEventListener('click', ()=>{
+      const toSpeak = revealCurrentWord() || ''
+      speakWord(toSpeak)
+    })
+
+    document.getElementById('skipBtn').addEventListener('click', ()=>{
+      moveNext(true)
+    })
+
+    document.getElementById('answerInput').addEventListener('keydown', (e)=>{
+      if(e.key === 'Enter') handleAnswer()
+    })
+
+    document.getElementById('addToPractice').addEventListener('click', ()=>{
+      addToPracticeList(currentBlock.words[currentIndex])
+      showToast('Added to practice list')
+    })
+
+    document.getElementById('deleteWordBtn').addEventListener('click', ()=>{
+      deleteWord(currentBlock.words[currentIndex].id)
+    })
+  }
+
+  function updateUserScoreUI(){
+    document.getElementById('userScore').querySelector('.text-xl').textContent = userState.totalPoints || 0
+    document.getElementById('totalAnswered').textContent = userState.stats.answered || 0
+    document.getElementById('totalCorrect').textContent = userState.stats.correct || 0
+    document.getElementById('totalWrong').textContent = userState.stats.wrong || 0
+  }
+
+  // -------------------------------
+  // Speech
+  // -------------------------------
+  function speakWord(text){
+    if(!text) return
+    try{
+      const ut = new SpeechSynthesisUtterance(text)
+      ut.lang = 'bn-BD'
+      ut.rate = 0.9
+      window.speechSynthesis.speak(ut)
+    }catch(e){
+      console.warn('Speech failed', e)
+      showToast('বক্তৃতা (TTS) সমর্থিত নয় আপনার ব্রাউজারে।')
+    }
+  }
+
+  // -------------------------------
+  // App initialization
+  // -------------------------------
+  async function initApp(){
+    // Normalize existing backend data (if any)
+    // If some previous userState came from firestore and contains word ids we must ensure MASTER_WORDS contain them
+    // Normalize MASTER_WORDS
+    MASTER_WORDS = normalizeWords(MASTER_WORDS)
+
+    // Initialize firebase in background, but don't block UI
+    initFirebase()
+
+    buildBlocks()
+    renderBlocksGrid()
+    renderSpecialDecks()
+    wireUI()
+    updateUserScoreUI()
+
+    // show small hint
+    showToast('তৈরি! ব্লক বেছে অনুশীলন শুরু করুন')
+  }
+
+  // -------------------------------
+  // Expose small helpers to console for debugging
+  // -------------------------------
+  window.__app = {
+    get state(){return {MASTER_WORDS, blocks, userState, currentBlock}}
+  }
+
+  </script>
 </body>
 </html>
